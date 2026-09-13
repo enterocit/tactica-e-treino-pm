@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PManager - Portal Consolidado & Treinos por Idade</title>
-    <!-- Importação do Tesseract.js para leitura de prints/imagens do plantel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+    <title>PManager - Portal Consolidado & Treinos (Versão Original)</title>
     <style>
         :root {
             --pm-bg: #dbe8b8;
@@ -14,7 +12,6 @@
             --pm-card-bg: #f4f8e8;
             --pm-border: #8ba332;
             --pm-text: #1a2308;
-            --pm-pitch: #2e7d32;
             --pm-table-header: #c3d88c;
             --pm-table-alt: #ebf2d5;
         }
@@ -37,7 +34,6 @@
             padding: 8px;
         }
 
-        /* SISTEMA DE SEPARADORES (TABS) */
         .tabs-nav {
             display: flex;
             background: #7a9427;
@@ -93,7 +89,6 @@
 
         .pm-box-body { padding: 8px; }
 
-        /* TABELA DE PLANTEL COM ESPAÇAMENTO LARGO E CONFORTÁVEL */
         .pm-table-wrapper {
             overflow-x: auto;
             background: white;
@@ -159,7 +154,6 @@
             gap: 8px;
         }
 
-        /* CAMPO TÁTICO ESTILO JOGO */
         .pitch-container {
             background: radial-gradient(circle, #388e3c 0%, #1b5e20 100%);
             border: 2px solid #ffffff;
@@ -226,8 +220,8 @@
         .btn-action:hover { background: #5a731a; }
         .btn-print { background: #4b5563; border-color: #374151; }
         .btn-opt { background: #7c3aed; border-color: #6d28d9; }
+        .btn-add { background: #0284c7; border-color: #0369a1; }
 
-        /* TÁTICAS AVANÇADAS PMANAGER */
         .tactic-game-layout {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -271,48 +265,24 @@
             line-height: 1.35;
         }
 
-        /* MODAIS */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 100;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: white;
-            padding: 16px;
-            border-radius: 4px;
-            max-width: 650px;
-            width: 90%;
-            border: 2px solid var(--pm-header-dark);
-        }
-
-        /* TREINOS (SEPARADOR INDEPENDENTE) COM IDADE EXATA */
-        .training-tab-container {
+        /* Estilos originais da aba de treinos (antiga) */
+        .training-container {
             display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 12px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
-        .player-avatar-box-large {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #f1f5e6;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            padding: 12px;
-            text-align: center;
+        .training-panel {
+            background: #fff;
+            border: 1px solid var(--pm-border);
+            padding: 10px;
+            border-radius: 2px;
         }
-        .avatar-circle {
-            width: 80px; height: 80px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            border: 3px solid #7a9427;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 36px; margin-bottom: 8px;
+        .training-panel h3 {
+            margin-top: 0;
+            color: #2e7d32;
+            font-size: 12px;
+            border-bottom: 1px solid var(--pm-border);
+            padding-bottom: 4px;
         }
     </style>
 </head>
@@ -320,13 +290,12 @@
 
 <div class="container">
 
-    <!-- BARRA DE SEPARADORES -->
     <div class="tabs-nav">
         <button class="tab-btn active" onclick="mudarTab(event, 'tabPlantelTatica')">📋 Plantel & Táticas do Jogo</button>
-        <button class="tab-btn" onclick="mudarTab(event, 'tabTreinosProg')">📈 Treinos & Progressões por Idade (Centro de Atletas)</button>
+        <button class="tab-btn" onclick="mudarTab(event, 'tabTreinosProg')">📈 Simulador de Treinos & Progressão</button>
     </div>
 
-    <!-- ================= 1. SEPARADOR: PLANTEL E TÁTICAS ================= -->
+    <!-- SEPARADOR 1: PLANTEL E TÁTICAS -->
     <div id="tabPlantelTatica" class="tab-content active">
         
         <div class="grid-main">
@@ -335,8 +304,8 @@
                     <div class="pm-box-header">
                         <span>📋 Gestão de Plantel & AGS (Cálculo Oficial PManager)</span>
                         <div>
+                            <button class="btn-action btn-add" onclick="adicionarAtletaManual()">➕ Novo Atleta</button>
                             <button class="btn-action btn-opt" onclick="otimizarEFormarEquipa()">⚡ Auto-Otimizar Onze</button>
-                            <button class="btn-action" style="background:#2563eb;" onclick="abrirModalImportar()">📷 Importar por Imagem / Print</button>
                             <button class="btn-action btn-print" onclick="window.print()">🖨️ Imprimir</button>
                         </div>
                     </div>
@@ -392,7 +361,6 @@
             </div>
         </div>
 
-        <!-- PAINEL TÁTICO AVANÇADO -->
         <div class="pm-box">
             <div class="pm-box-header">
                 <span>⚙️ Central Tática Avançada (Secção Oficial PManager)</span>
@@ -456,50 +424,34 @@
 
     </div>
 
-    <!-- ================= 2. SEPARADOR: TREINOS E PROGRESSÕES POR IDADE ================= -->
+    <!-- SEPARADOR 2: TREINOS (VERSÃO ORIGINAL EXATA) -->
     <div id="tabTreinosProg" class="tab-content">
         <div class="pm-box">
             <div class="pm-box-header">
-                <span>📈 Centro de Progressão e Treinos por Idade Exata do Atleta</span>
+                <span>📈 Simulador de Treinos e Progressão (Versão Original)</span>
             </div>
             <div class="pm-box-body">
-                <div class="training-tab-container">
-                    <!-- Avatar, seletor de atleta e idade real -->
-                    <div class="player-avatar-box-large">
-                        <div class="avatar-circle" id="avatarIcon">👤</div>
-                        <label style="font-weight:bold; margin-bottom:4px;">Selecionar Atleta:</label>
-                        <select id="selectAtletaProg" onchange="selecionarAtletaParaTreino()" style="width:100%; padding:4px; font-size:11px; margin-bottom:8px;">
-                            <!-- Preenchido dinamicamente -->
+                <div class="training-container">
+                    <div class="training-panel">
+                        <h3>Configuração do Treino</h3>
+                        <label style="font-weight:bold; display:block; margin-bottom:4px;">Atributo Atual (1-20):</label>
+                        <input type="number" id="simAtributo" value="12" min="1" max="20" style="width:100%; padding:4px; margin-bottom:8px;" oninput="calcularTreinoOriginal()">
+
+                        <label style="font-weight:bold; display:block; margin-bottom:4px;">Idade do Atleta:</label>
+                        <input type="number" id="simIdade" value="21" min="16" max="40" style="width:100%; padding:4px; margin-bottom:8px;" oninput="calcularTreinoOriginal()">
+
+                        <label style="font-weight:bold; display:block; margin-bottom:4px;">Intensidade do Treino:</label>
+                        <select id="simIntensidade" style="width:100%; padding:4px; margin-bottom:8px;" onchange="calcularTreinoOriginal()">
+                            <option value="1.0">Normal (100%)</option>
+                            <option value="1.25">Intensivo (125%)</option>
+                            <option value="0.5">Leve / Manutenção (50%)</option>
                         </select>
-                        
-                        <div style="width:100%; text-align:left; background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:3px;">
-                            <label style="font-weight:bold; color:#2e7d32; display:block; margin-bottom:2px;">Idade Exata do Atleta:</label>
-                            <input type="number" id="trIdadeAtleta" value="22" min="16" max="40" oninput="calcularTreinoPorIdade()" style="width:100%; padding:3px; font-weight:bold; text-align:center;">
-                        </div>
-                        <div id="lblEscalaoIdade" style="font-weight:bold; color:#1e293b; font-size:11px; margin-top:6px; background:#e2e8f0; padding:4px; width:100%; border-radius:2px;">
-                            Escalão: Jovem Promessa (Evolução Máxima)
-                        </div>
                     </div>
 
-                    <!-- Opções de treino e cálculo baseado estritamente na idade -->
-                    <div>
-                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
-                            <div style="background:#fff; border:1px solid #c2d49c; padding:8px; border-radius:2px;">
-                                <label style="font-weight:bold; color:#2e7d32; display:block; margin-bottom:3px;">Atributo Base Alvo (1 a 20)</label>
-                                <input type="number" id="trAtributoBase" value="12" min="1" max="20" oninput="calcularTreinoPorIdade()" style="width:100%; padding:4px;">
-                            </div>
-                            <div style="background:#fff; border:1px solid #c2d49c; padding:8px; border-radius:2px;">
-                                <label style="font-weight:bold; color:#2e7d32; display:block; margin-bottom:3px;">Tipo de Treino / Foco</label>
-                                <select id="trTipoTreino" onchange="calcularTreinoPorIdade()" style="width:100%; padding:4px;">
-                                    <option value="Intensivo">Treino Intensivo (Foco Rápido)</option>
-                                    <option value="Normal" selected>Treino Normal (Equilibrado)</option>
-                                    <option value="Manutencao">Treino de Manutenção</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="analysis-box" id="resultadoTreinoIdade" style="background:#fdfef7; padding:12px; font-size:12px;">
-                            Insira a idade exata e o atributo base para calcular a projeção de crescimento com base na faixa etária.
+                    <div class="training-panel">
+                        <h3>Resultado da Projeção</h3>
+                        <div id="resultadoTreinoOriginal" style="font-size:12px; line-height:1.4;">
+                            Insira os dados ao lado para calcular a evolução.
                         </div>
                     </div>
                 </div>
@@ -507,24 +459,6 @@
         </div>
     </div>
 
-</div>
-
-<!-- MODAL PARA IMPORTAR IMAGEM / PRINT SCREEN DO PLANTEL -->
-<div id="modalImport" class="modal">
-    <div class="modal-content">
-        <h3 style="margin-top:0; color:#2e7d32;">📷 Importar Plantel por Imagem (Print Screen)</h3>
-        <p>Seleciona um ficheiro de imagem com a tabela do teu plantel ou arrasta-o. O sistema vai extrair o texto automaticamente.</p>
-        <input type="file" id="fileImageInput" accept="image/*" style="margin-bottom:10px; width:100%;">
-        <div id="statusOCR" style="font-weight:bold; color:#7a9427; margin-bottom:10px;"></div>
-        
-        <p style="margin-top:10px; font-size:10px; color:#555;">Alternativa (Colar texto direto copiado do jogo):</p>
-        <textarea id="txtImport" rows="4" style="width:100%; font-size:11px; font-family:monospace;" placeholder="Ex: GR J. Quenault 25 88 4 6 90 4 15 14 8 6 10"></textarea>
-        
-        <div style="margin-top:10px; text-align:right;">
-            <button class="btn-action" style="background:#6b7280;" onclick="fecharModalImportar()">Cancelar</button>
-            <button class="btn-action" style="background:#16a34a;" onclick="processarTextoImportadoManual()">Processar Texto Manual</button>
-        </div>
-    </div>
 </div>
 
 <script>
@@ -554,7 +488,6 @@
         evt.currentTarget.classList.add("active");
     }
 
-    // CÁLCULO OFICIAL DE AGS DO PMANAGER
     function calcularAGS(j) {
         let gs = 0;
         if (j.pos.includes("D") || j.pos === "GR") {
@@ -617,8 +550,28 @@
 
         renderTabela();
         desenharCampo();
-        atualizarSelectJogadoresTreino();
         atualizarTaticasJogo();
+    }
+
+    function adicionarAtletaManual() {
+        jogadores.push({
+            id: Date.now(),
+            pos: "MC",
+            nome: "Novo Atleta",
+            idade: 21,
+            cf: 85,
+            ft: 3,
+            xp: 4,
+            fel: 80,
+            des: 10,
+            aer: 10,
+            pas: 10,
+            cul: 10,
+            vel: 10,
+            for: 10,
+            status: "fora"
+        });
+        otimizarEFormarEquipa();
     }
 
     function renderTabela() {
@@ -685,70 +638,25 @@
         container.appendChild(gRow);
     }
 
-    function atualizarSelectJogadoresTreino() {
-        const sel = document.getElementById('selectAtletaProg');
-        const currVal = sel.value;
-        sel.innerHTML = jogadores.map(j => `<option value="${j.id}">${j.pos} - ${j.nome} (${j.idade}a)</option>`).join('');
-        if(currVal) sel.value = currVal;
-        selecionarAtletaParaTreino(false);
-    }
+    function calcularTreinoOriginal() {
+        let attr = parseFloat(document.getElementById('simAtributo').value) || 12;
+        let idade = parseInt(document.getElementById('simIdade').value) || 21;
+        let intensidade = parseFloat(document.getElementById('simIntensidade').value) || 1.0;
 
-    function selecionarAtletaParaTreino(atualizarInputs = true) {
-        const id = parseInt(document.getElementById('selectAtletaProg').value);
-        const j = jogadores.find(x => x.id === id);
-        if(!j) return;
+        let fatorIdade = 1.0;
+        if (idade <= 21) fatorIdade = 1.3;
+        else if (idade <= 25) fatorIdade = 1.0;
+        else if (idade <= 30) fatorIdade = 0.7;
+        else fatorIdade = 0.3;
 
-        document.getElementById('trIdadeAtleta').value = j.idade || 22;
-        document.getElementById('avatarIcon').innerText = j.pos === 'GR' ? '🧤' : (j.pos.includes('A') ? '⚽' : '🏃');
+        let ganho = (1.5 * (21 - attr/20) * fatorIdade * intensidade) / 10;
+        let novoAttr = Math.min(20, Math.max(1, attr + ganho));
 
-        if(atualizarInputs) {
-            let baseVal = j.pos === 'GR' ? j.aer : (j.pos.includes('D') ? j.des : (j.pos.includes('M') ? j.pas : j.aer));
-            document.getElementById('trAtributoBase').value = baseVal || 12;
-        }
-        calcularTreinoPorIdade();
-    }
-
-    // CÁLCULO DE TREINO BASEADO EXATAMENTE NA IDADE DO JOGADOR
-    function calcularTreinoPorIdade() {
-        let idade = parseInt(document.getElementById('trIdadeAtleta').value) || 22;
-        let base = parseFloat(document.getElementById('trAtributoBase').value) || 12;
-        let tipoTreino = document.getElementById('trTipoTreino').value;
-
-        let escalaoStr = "";
-        let fatorEvolucao = 1.0;
-
-        if (idade <= 20) {
-            escalaoStr = "Jovem Promessa (Evolução Muito Rápida)";
-            fatorEvolucao = 1.40;
-        } else if (idade >= 21 && idade <= 25) {
-            escalaoStr = "Em Desenvolvimento (Evolução Alta)";
-            fatorEvolucao = 1.15;
-        } else if (idade >= 26 && idade <= 29) {
-            escalaoStr = "Plenitude / Auferimento (Evolução Estável)";
-            fatorEvolucao = 0.75;
-        } else if (idade >= 30 && idade <= 33) {
-            escalaoStr = "Experiente (Evolução Lenta / Manutenção)";
-            fatorEvolucao = 0.35;
-        } else {
-            escalaoStr = "Veterano (Em Declínio Natural de Atributos)";
-            fatorEvolucao = -0.25;
-        }
-
-        document.getElementById('lblEscalaoIdade').innerText = `Escalão: ${escalaoStr}`;
-
-        let multTreino = tipoTreino === "Intensivo" ? 1.25 : (tipoTreino === "Manutencao" ? 0.4 : 1.0);
-        let ganhoEstimado = (1.2 * fatorEvolucao * multTreino);
-        
-        if (base >= 18 && ganhoEstimado > 0) ganhoEstimado *= 0.3; // Lei de rendimentos decrescentes em atributos altos
-
-        let valorFinal = Math.min(20, Math.max(1, base + ganhoEstimado));
-
-        document.getElementById('resultadoTreinoIdade').innerHTML = `
-            <b>📊 Simulação de Progressão por Idade (${idade} anos):</b><br>
-            • Escalão Etário: <strong style="color:#2563eb;">${escalaoStr}</strong><br>
-            • Taxa de Evolução Prevista: <strong style="${ganhoEstimado >= 0 ? 'color:#16a34a;' : 'color:#dc2626;'}">${ganhoEstimado >= 0 ? '+' : ''}${ganhoEstimado.toFixed(2)} pts por época</strong><br>
-            • Atributo Projetado (Fim da Época): <strong style="color:#1e293b; font-size:13px;">${valorFinal.toFixed(2)} / 20</strong><br>
-            <small style="color:#475569;">Atletas jovens evoluem exponencialmente mais rápido. Atletas veteranos sofrem penalização natural por idade.</small>
+        document.getElementById('resultadoTreinoOriginal').innerHTML = `
+            <b>Atributo Inicial:</b> ${attr.toFixed(1)}<br>
+            <b>Fator Etário (${idade} anos):</b> ${fatorIdade}x<br>
+            <b>Ganho Estimado por Ciclo:</b> +${ganho.toFixed(2)} pts<br>
+            <b>Atributo Projetado:</b> <strong style="color: #2e7d32; font-size:13px;">${novoAttr.toFixed(2)} / 20</strong>
         `;
     }
 
@@ -780,60 +688,19 @@
         `;
     }
 
-    function atualizar(i, campo, val) { jogadores[i][campo] = val; renderTabela(); atualizarTaticasJogo(); atualizarSelectJogadoresTreino(); }
-    function removerJogador(i) { jogadores.splice(i, 1); otimizarEFormarEquipa(); }
-    function abrirModalImportar() { document.getElementById('modalImport').style.display = 'flex'; }
-    function fecharModalImportar() { document.getElementById('modalImport').style.display = 'none'; }
-
-    // LEITURA OCR DE IMAGEM CARREGADA
-    document.getElementById('fileImageInput').addEventListener('change', function(e) {
-        let file = e.target.files[0];
-        if(!file) return;
-        document.getElementById('statusOCR').innerText = "A analisar a imagem do plantel (OCR em curso)...";
-        
-        Tesseract.recognize(
-            file,
-            'por',
-            { logger: m => { if(m.status === 'recognizing text') document.getElementById('statusOCR').innerText = `A processar imagem: ${(m.progress * 100).toFixed(0)}%`; } }
-        ).then(({ data: { text } }) => {
-            document.getElementById('statusOCR').innerText = "Leitura concluída com sucesso!";
-            document.getElementById('txtImport').value = text;
-        }).catch(err => {
-            document.getElementById('statusOCR').innerText = "Erro ao ler a imagem. Insira os dados no campo abaixo.";
-        });
-    });
-
-    function processarTextoImportadoManual() {
-        const raw = document.getElementById('txtImport').value.trim();
-        if(!raw) return;
-        let linhas = raw.split('\n');
-        let novo = [];
-        linhas.forEach((l, idx) => {
-            let p = l.trim().split(/\s+/);
-            if(p.length >= 7) {
-                let nums = p.filter(x => !isNaN(parseFloat(x))).map(Number);
-                novo.push({
-                    id: Date.now()+idx, 
-                    pos: p[0].toUpperCase(), 
-                    nome: p[1]+" "+(p[2]&&isNaN(p[2])?p[2]:""),
-                    idade: nums[0] || 22,
-                    cf: nums[1]||85, ft: nums[2]||4, xp: nums[3]||5, fel: nums[4]||85,
-                    des: nums[5]||12, aer: nums[6]||12, pas: nums[7]||12, cul: nums[8]||12, vel: nums[9]||12, for: nums[10]||12, 
-                    status: "suplente"
-                });
-            }
-        });
-        if(novo.length > 0) { 
-            jogadores = novo; 
-            otimizarEFormarEquipa(); 
-            fecharModalImportar(); 
-            alert("Plantel importado com sucesso!");
-        } else { 
-            alert("Não foram detetados dados válidos. Verifique se o formato inclui a idade."); 
-        }
+    function atualizar(i, campo, val) { 
+        jogadores[i][campo] = val; 
+        renderTabela(); 
+        atualizarTaticasJogo(); 
+    }
+    
+    function removerJogador(i) { 
+        jogadores.splice(i, 1); 
+        otimizarEFormarEquipa(); 
     }
 
     otimizarEFormarEquipa();
+    calcularTreinoOriginal();
 </script>
 </body>
 </html>
