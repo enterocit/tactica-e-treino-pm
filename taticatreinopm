@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PManager - Portal Consolidado & Treinos por Idade</title>
+    <!-- Importação do Tesseract.js para leitura de prints/imagens do plantel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+    <style>
+        :root {
+            --pm-bg: #dbe8b8;
+            --pm-header: #93b032;
+            --pm-header-dark: #7a9427;
+            --pm-card-bg: #f4f8e8;
+            --pm-border: #8ba332;
+            --pm-text: #1a2308;
+            --pm-pitch: #2e7d32;
+            --pm-table-header: #c3d88c;
+            --pm-table-alt: #ebf2d5;
+        }
+
+        * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; font-size: 11px; }
+
+        body {
+            background-color: #243015;
+            color: var(--pm-text);
+            margin: 0;
+            padding: 8px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background-color: var(--pm-bg);
+            border: 2px solid var(--pm-border);
+            border-radius: 4px;
+            padding: 8px;
+        }
+
+        /* SISTEMA DE SEPARADORES (TABS) */
+        .tabs-nav {
+            display: flex;
+            background: #7a9427;
+            border-radius: 3px 3px 0 0;
+            overflow: hidden;
+            border-bottom: 2px solid #5a731a;
+        }
+
+        .tab-btn {
+            background: #93b032;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+            border-right: 1px solid #7a9427;
+            transition: background 0.2s;
+        }
+
+        .tab-btn:hover { background: #829f2b; }
+        .tab-btn.active {
+            background: var(--pm-card-bg);
+            color: var(--pm-text);
+            border-top: 3px solid #5a731a;
+        }
+
+        .tab-content {
+            display: none;
+            padding-top: 6px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        .pm-box {
+            background: var(--pm-card-bg);
+            border: 1px solid var(--pm-border);
+            margin-bottom: 8px;
+            border-radius: 3px;
+        }
+
+        .pm-box-header {
+            background: linear-gradient(to bottom, var(--pm-header), var(--pm-header-dark));
+            color: white;
+            font-weight: bold;
+            padding: 6px 8px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pm-box-body { padding: 8px; }
+
+        /* TABELA DE PLANTEL COM ESPAÇAMENTO LARGO E CONFORTÁVEL */
+        .pm-table-wrapper {
+            overflow-x: auto;
+            background: white;
+            border: 1px solid var(--pm-border);
+            border-radius: 2px;
+        }
+
+        .pm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .pm-table th {
+            background: var(--pm-table-header);
+            border: 1px solid var(--pm-border);
+            padding: 6px 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #1a2308;
+        }
+
+        .pm-table td {
+            border: 1px solid #d0deaa;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        .pm-table tr:nth-child(even) { background-color: var(--pm-table-alt); }
+        .pm-table tr.row-suplente { background-color: #fef3c7 !important; }
+
+        .pm-table input[type="text"] { width: 110px; font-size: 11px; border: 1px solid #aaa; padding: 3px; }
+        .pm-table input[type="number"] { width: 42px; font-size: 11px; text-align: center; border: 1px solid #aaa; padding: 3px; }
+        .pm-table select { font-size: 11px; padding: 3px; }
+
+        .badge-skill {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: white;
+            display: inline-block;
+            min-width: 42px;
+        }
+        .bg-excellent { background-color: #15803d; }
+        .bg-good { background-color: #22c55e; }
+        .bg-average { background-color: #d97706; }
+        .bg-bad { background-color: #ef4444; }
+
+        .badge-status {
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 2px;
+            font-size: 10px;
+        }
+        .status-titular { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .status-suplente { background-color: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+        .status-fora { background-color: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+
+        .grid-main {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 8px;
+        }
+
+        /* CAMPO TÁTICO ESTILO JOGO */
+        .pitch-container {
+            background: radial-gradient(circle, #388e3c 0%, #1b5e20 100%);
+            border: 2px solid #ffffff;
+            height: 380px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .pitch-line-mid {
+            position: absolute;
+            top: 50%; left: 0; right: 0;
+            height: 2px; background: rgba(255,255,255,0.7);
+        }
+
+        .pitch-circle {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 50%;
+        }
+
+        .pitch-row {
+            display: flex;
+            justify-content: space-around;
+            z-index: 2;
+            align-items: center;
+        }
+
+        .node-player {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center;
+            font-weight: bold; font-size: 9px; color: white;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+            text-shadow: 0 1px 1px black;
+        }
+        .node-player span { font-size: 8px; color: #fef08a; }
+
+        .node-gk { background: #ca8a04; }
+        .node-def { background: #dc2626; }
+        .node-mid { background: #2563eb; }
+        .node-fwd { background: #16a34a; }
+
+        .btn-action {
+            background: linear-gradient(to bottom, #7fa028, #5a731a);
+            color: white;
+            border: 1px solid #455913;
+            padding: 4px 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        .btn-action:hover { background: #5a731a; }
+        .btn-print { background: #4b5563; border-color: #374151; }
+        .btn-opt { background: #7c3aed; border-color: #6d28d9; }
+
+        /* TÁTICAS AVANÇADAS PMANAGER */
+        .tactic-game-layout {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background: #eaf2dc;
+            padding: 8px;
+            border: 1px solid var(--pm-border);
+            border-radius: 2px;
+        }
+
+        .tactic-group {
+            background: white;
+            border: 1px solid #c2d49c;
+            padding: 6px;
+            border-radius: 2px;
+        }
+
+        .tactic-group label {
+            font-weight: bold;
+            color: #2e7d32;
+            display: block;
+            margin-bottom: 3px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 2px;
+        }
+
+        .tactic-group select, .tactic-group input {
+            width: 100%;
+            padding: 3px;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .analysis-box {
+            background: #fff;
+            border: 1px solid var(--pm-border);
+            padding: 8px;
+            border-radius: 2px;
+            font-size: 11px;
+            margin-top: 6px;
+            line-height: 1.35;
+        }
+
+        /* MODAIS */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 16px;
+            border-radius: 4px;
+            max-width: 650px;
+            width: 90%;
+            border: 2px solid var(--pm-header-dark);
+        }
+
+        /* TREINOS (SEPARADOR INDEPENDENTE) COM IDADE EXATA */
+        .training-tab-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 12px;
+        }
+        .player-avatar-box-large {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #f1f5e6;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 12px;
+            text-align: center;
+        }
+        .avatar-circle {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            border: 3px solid #7a9427;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- BARRA DE SEPARADORES -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="mudarTab(event, 'tabPlantelTatica')">📋 Plantel & Táticas do Jogo</button>
+        <button class="tab-btn" onclick="mudarTab(event, 'tabTreinosProg')">📈 Treinos & Progressões por Idade (Centro de Atletas)</button>
+    </div>
+
+    <!-- ================= 1. SEPARADOR: PLANTEL E TÁTICAS ================= -->
+    <div id="tabPlantelTatica" class="tab-content active">
+        
+        <div class="grid-main">
+            <div>
+                <div class="pm-box">
+                    <div class="pm-box-header">
+                        <span>📋 Gestão de Plantel & AGS (Cálculo Oficial PManager)</span>
+                        <div>
+                            <button class="btn-action btn-opt" onclick="otimizarEFormarEquipa()">⚡ Auto-Otimizar Onze</button>
+                            <button class="btn-action" style="background:#2563eb;" onclick="abrirModalImportar()">📷 Importar por Imagem / Print</button>
+                            <button class="btn-action btn-print" onclick="window.print()">🖨️ Imprimir</button>
+                        </div>
+                    </div>
+                    <div class="pm-box-body">
+                        <div class="pm-table-wrapper">
+                            <table class="pm-table">
+                               <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Pos</th>
+                                        <th>Nome do Atleta</th>
+                                        <th>Idade</th>
+                                        <th>CF (%)</th>
+                                        <th>Forma</th>
+                                        <th>Exp</th>
+                                        <th>Felic</th>
+                                        <th>Des</th>
+                                        <th>Aér</th>
+                                        <th>Pas</th>
+                                        <th>Cul</th>
+                                        <th>Vel</th>
+                                        <th>For</th>
+                                        <th>GS</th>
+                                        <th>AGS (Oficial)</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plantelBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="pm-box">
+                    <div class="pm-box-header">
+                        <span>Onze Titular (Disposição Tática)</span>
+                        <select id="selectDisposicaoTatica" onchange="mudarDisposicaoTatica()" style="font-size:10px; padding:2px;">
+                            <option value="4-4-2">4-4-2 (Clássico)</option>
+                            <option value="4-3-3">4-3-3 (Ofensivo)</option>
+                            <option value="3-5-2">3-5-2 (Alargado)</option>
+                            <option value="4-5-1">4-5-1 (Consistente)</option>
+                        </select>
+                    </div>
+                    <div class="pm-box-body">
+                        <div class="pitch-container" id="pitchLayout">
+                            <div class="pitch-line-mid"></div>
+                            <div class="pitch-circle"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAINEL TÁTICO AVANÇADO -->
+        <div class="pm-box">
+            <div class="pm-box-header">
+                <span>⚙️ Central Tática Avançada (Secção Oficial PManager)</span>
+            </div>
+            <div class="pm-box-body">
+                <div class="tactic-game-layout">
+                    <div class="tactic-group">
+                        <label>Mentalidade da Equipa</label>
+                        <select id="tMentalidade" onchange="atualizarTaticasJogo()">
+                            <option value="Ultra-Defensivo">Ultra-Defensivo</option>
+                            <option value="Defensivo">Defensivo</option>
+                            <option value="Normal" selected>Normal</option>
+                            <option value="Ofensivo">Ofensivo</option>
+                            <option value="Totalmente Ofensivo">Totalmente Ofensivo</option>
+                        </select>
+                        <label>Estilo de Passes</label>
+                        <select id="tPasse" onchange="atualizarTaticasJogo()">
+                            <option value="Curtos" selected>Curtos</option>
+                            <option value="Longos">Longos</option>
+                            <option value="Jogo Direto">Jogo Direto</option>
+                            <option value="Variados">Variados</option>
+                        </select>
+                    </div>
+
+                    <div class="tactic-group">
+                        <label>Armas Táticas (Pressão)</label>
+                        <select id="tPressao" onchange="atualizarTaticasJogo()">
+                            <option value="DESLIGADA" selected>DESLIGADA</option>
+                            <option value="FRACA">FRACA</option>
+                            <option value="NORMAL">NORMAL</option>
+                            <option value="FORTE">FORTE</option>
+                            <option value="TOTAL (SUFOCANTE)">TOTAL (SUFOCANTE)</option>
+                        </select>
+                        <label>Linha Defensiva</label>
+                        <select id="tLinhaDef" onchange="atualizarTaticasJogo()">
+                            <option value="RECUADA" selected>RECUADA</option>
+                            <option value="NORMAL">NORMAL</option>
+                            <option value="ADIANADA (FORA DE JOGO)">ADIANADA (FORA DE JOGO)</option>
+                        </select>
+                    </div>
+
+                    <div class="tactic-group">
+                        <label>Contra-Ataque</label>
+                        <select id="tContrat" onchange="atualizarTaticasJogo()">
+                            <option value="NÃO" selected>NÃO</option>
+                            <option value="SIM">SIM</option>
+                        </select>
+                        <label>Tipo de Marcação</label>
+                        <select id="tMarcacao" onchange="atualizarTaticasJogo()">
+                            <option value="ZONA" selected>À ZONA</option>
+                            <option value="INDIVIDUAL">INDIVIDUAL</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="analysis-box" id="parecerTaticoJogo">
+                    A carregar análise tática oficial...
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= 2. SEPARADOR: TREINOS E PROGRESSÕES POR IDADE ================= -->
+    <div id="tabTreinosProg" class="tab-content">
+        <div class="pm-box">
+            <div class="pm-box-header">
+                <span>📈 Centro de Progressão e Treinos por Idade Exata do Atleta</span>
+            </div>
+            <div class="pm-box-body">
+                <div class="training-tab-container">
+                    <!-- Avatar, seletor de atleta e idade real -->
+                    <div class="player-avatar-box-large">
+                        <div class="avatar-circle" id="avatarIcon">👤</div>
+                        <label style="font-weight:bold; margin-bottom:4px;">Selecionar Atleta:</label>
+                        <select id="selectAtletaProg" onchange="selecionarAtletaParaTreino()" style="width:100%; padding:4px; font-size:11px; margin-bottom:8px;">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                        
+                        <div style="width:100%; text-align:left; background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:3px;">
+                            <label style="font-weight:bold; color:#2e7d32; display:block; margin-bottom:2px;">Idade Exata do Atleta:</label>
+                            <input type="number" id="trIdadeAtleta" value="22" min="16" max="40" oninput="calcularTreinoPorIdade()" style="width:100%; padding:3px; font-weight:bold; text-align:center;">
+                        </div>
+                        <div id="lblEscalaoIdade" style="font-weight:bold; color:#1e293b; font-size:11px; margin-top:6px; background:#e2e8f0; padding:4px; width:100%; border-radius:2px;">
+                            Escalão: Jovem Promessa (Evolução Máxima)
+                        </div>
+                    </div>
+
+                    <!-- Opções de treino e cálculo baseado estritamente na idade -->
+                    <div>
+                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
+                            <div style="background:#fff; border:1px solid #c2d49c; padding:8px; border-radius:2px;">
+                                <label style="font-weight:bold; color:#2e7d32; display:block; margin-bottom:3px;">Atributo Base Alvo (1 a 20)</label>
+                                <input type="number" id="trAtributoBase" value="12" min="1" max="20" oninput="calcularTreinoPorIdade()" style="width:100%; padding:4px;">
+                            </div>
+                            <div style="background:#fff; border:1px solid #c2d49c; padding:8px; border-radius:2px;">
+                                <label style="font-weight:bold; color:#2e7d32; display:block; margin-bottom:3px;">Tipo de Treino / Foco</label>
+                                <select id="trTipoTreino" onchange="calcularTreinoPorIdade()" style="width:100%; padding:4px;">
+                                    <option value="Intensivo">Treino Intensivo (Foco Rápido)</option>
+                                    <option value="Normal" selected>Treino Normal (Equilibrado)</option>
+                                    <option value="Manutencao">Treino de Manutenção</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="analysis-box" id="resultadoTreinoIdade" style="background:#fdfef7; padding:12px; font-size:12px;">
+                            Insira a idade exata e o atributo base para calcular a projeção de crescimento com base na faixa etária.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL PARA IMPORTAR IMAGEM / PRINT SCREEN DO PLANTEL -->
+<div id="modalImport" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color:#2e7d32;">📷 Importar Plantel por Imagem (Print Screen)</h3>
+        <p>Seleciona um ficheiro de imagem com a tabela do teu plantel ou arrasta-o. O sistema vai extrair o texto automaticamente.</p>
+        <input type="file" id="fileImageInput" accept="image/*" style="margin-bottom:10px; width:100%;">
+        <div id="statusOCR" style="font-weight:bold; color:#7a9427; margin-bottom:10px;"></div>
+        
+        <p style="margin-top:10px; font-size:10px; color:#555;">Alternativa (Colar texto direto copiado do jogo):</p>
+        <textarea id="txtImport" rows="4" style="width:100%; font-size:11px; font-family:monospace;" placeholder="Ex: GR J. Quenault 25 88 4 6 90 4 15 14 8 6 10"></textarea>
+        
+        <div style="margin-top:10px; text-align:right;">
+            <button class="btn-action" style="background:#6b7280;" onclick="fecharModalImportar()">Cancelar</button>
+            <button class="btn-action" style="background:#16a34a;" onclick="processarTextoImportadoManual()">Processar Texto Manual</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let jogadores = [
+        { id: 1, pos: "GR", nome: "J. Quenault", idade: 25, cf: 88, ft: 4, xp: 6, fel: 90, des: 4, aer: 15, pas: 14, cul: 8, vel: 6, for: 10, status: "titular" },
+        { id: 2, pos: "GR", nome: "M. Vagner", idade: 21, cf: 82, ft: 3, xp: 4, fel: 80, des: 3, aer: 10, pas: 8, cul: 5, vel: 5, for: 8, status: "suplente" },
+        { id: 3, pos: "DD", nome: "B. Cooper", idade: 22, cf: 95, ft: 5, xp: 7, fel: 85, des: 17, aer: 10, pas: 6, cul: 6, vel: 12, for: 14, status: "titular" },
+        { id: 4, pos: "DC", nome: "J. McBreen", idade: 28, cf: 91, ft: 4, xp: 4, fel: 85, des: 15, aer: 14, pas: 8, cul: 4, vel: 6, for: 18, status: "titular" },
+        { id: 5, pos: "DC", nome: "R. McBreen", idade: 24, cf: 85, ft: 3, xp: 5, fel: 80, des: 17, aer: 13, pas: 10, cul: 3, vel: 8, for: 15, status: "titular" },
+        { id: 6, pos: "DE", nome: "J. Weir", idade: 20, cf: 94, ft: 5, xp: 8, fel: 100, des: 16, aer: 8, pas: 9, cul: 5, vel: 14, for: 10, status: "titular" },
+        { id: 7, pos: "MD", nome: "V. Evans", idade: 23, cf: 89, ft: 4, xp: 6, fel: 95, des: 6, aer: 5, pas: 18, cul: 14, vel: 12, for: 10, status: "titular" },
+        { id: 8, pos: "MC", nome: "B. Judge", idade: 29, cf: 75, ft: 3, xp: 5, fel: 70, des: 10, aer: 9, pas: 16, cul: 12, vel: 9, for: 11, status: "titular" },
+        { id: 9, pos: "MC", nome: "L. Modric", idade: 31, cf: 92, ft: 4, xp: 8, fel: 90, des: 8, aer: 6, pas: 19, cul: 16, vel: 10, for: 9, status: "titular" },
+        { id: 10, pos: "ME", nome: "P. Sterling", idade: 22, cf: 86, ft: 3, xp: 4, fel: 85, des: 5, aer: 4, pas: 14, cul: 11, vel: 15, for: 8, status: "titular" },
+        { id: 11, pos: "AD", nome: "C. Gatt", idade: 21, cf: 90, ft: 3, xp: 4, fel: 90, des: 4, aer: 12, pas: 8, cul: 8, vel: 15, for: 12, status: "titular" },
+        { id: 12, pos: "AE", nome: "H. Abdal", idade: 19, cf: 70, ft: 2, xp: 3, fel: 65, des: 3, aer: 14, pas: 6, cul: 7, vel: 14, for: 13, status: "titular" }
+    ];
+
+    let disposicaoAtual = { nome: "4-4-2", def: 4, mid: 4, fwd: 2 };
+
+    function mudarTab(evt, tabName) {
+        let contents = document.getElementsByClassName("tab-content");
+        for (let c of contents) c.classList.remove("active");
+        let buttons = document.getElementsByClassName("tab-btn");
+        for (let b of buttons) b.classList.remove("active");
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+
+    // CÁLCULO OFICIAL DE AGS DO PMANAGER
+    function calcularAGS(j) {
+        let gs = 0;
+        if (j.pos.includes("D") || j.pos === "GR") {
+            gs = (j.des * 0.35 + j.aer * 0.25) + (j.pas * 0.10 + j.cul * 0.10) + (j.vel * 0.10 + j.for * 0.10);
+        } else if (j.pos.includes("M")) {
+            gs = (j.pas * 0.35 + j.cul * 0.25) + (j.des * 0.10 + j.aer * 0.10) + (j.vel * 0.10 + j.for * 0.10);
+        } else {
+            gs = (j.des * 0.10 + j.aer * 0.35) + (j.pas * 0.10 + j.cul * 0.15) + (j.vel * 0.15 + j.for * 0.15);
+        }
+
+        let cfMod = j.cf > 90 ? 1 : (j.cf >= 80 ? 0 : -1);
+        let ftMod = j.ft - 3;
+        let xpMod = j.xp - 4;
+        let felDecimal = j.fel > 1 ? (j.fel / 100) : j.fel;
+        let felVal = felDecimal >= 0.75 ? 1 : felDecimal;
+        let felMod = felVal - 1;
+
+        let mult = 1 + (0.06 * cfMod) + (0.04 * ftMod) + (0.03 * xpMod) + (0.25 * felMod);
+        let ags = gs * mult;
+
+        return { gs: gs.toFixed(2), ags: ags.toFixed(2), agsNum: ags };
+    }
+
+    function mudarDisposicaoTatica() {
+        let val = document.getElementById('selectDisposicaoTatica').value;
+        if(val === "4-4-2") disposicaoAtual = { nome: "4-4-2", def: 4, mid: 4, fwd: 2 };
+        else if(val === "4-3-3") disposicaoAtual = { nome: "4-3-3", def: 4, mid: 3, fwd: 3 };
+        else if(val === "3-5-2") disposicaoAtual = { nome: "3-5-2", def: 3, mid: 5, fwd: 2 };
+        else if(val === "4-5-1") disposicaoAtual = { nome: "4-5-1", def: 4, mid: 5, fwd: 1 };
+        
+        otimizarEFormarEquipa();
+    }
+
+    function otimizarEFormarEquipa() {
+        if (jogadores.length === 0) return;
+        let lista = jogadores.map(j => ({ ...j, agsVal: calcularAGS(j).agsNum }));
+
+        let grs = lista.filter(j => j.pos === 'GR').sort((a,b) => b.agsVal - a.agsVal);
+        let defs = lista.filter(j => j.pos.includes('D') && j.pos !== 'GR').sort((a,b) => b.agsVal - a.agsVal);
+        let mids = lista.filter(j => j.pos.includes('M')).sort((a,b) => b.agsVal - a.agsVal);
+        let fwds = lista.filter(j => j.pos.includes('A')).sort((a,b) => b.agsVal - a.agsVal);
+
+        let titulares = new Set();
+        if (grs.length > 0) titulares.add(grs[0].id);
+        defs.slice(0, disposicaoAtual.def).forEach(j => titulares.add(j.id));
+        mids.slice(0, disposicaoAtual.mid).forEach(j => titulares.add(j.id));
+        fwds.slice(0, disposicaoAtual.fwd).forEach(j => titulares.add(j.id));
+
+        let suplentesCount = 0;
+        jogadores.forEach(j => {
+            if (titulares.has(j.id)) {
+                j.status = "titular";
+            } else if (suplentesCount < 7) {
+                j.status = "suplente";
+                suplentesCount++;
+            } else {
+                j.status = "fora";
+            }
+        });
+
+        renderTabela();
+        desenharCampo();
+        atualizarSelectJogadoresTreino();
+        atualizarTaticasJogo();
+    }
+
+    function renderTabela() {
+        const tbody = document.getElementById('plantelBody');
+        tbody.innerHTML = jogadores.map((j, i) => {
+            const { gs, ags, agsNum } = calcularAGS(j);
+            let badgeClass = agsNum >= 12.5 ? "bg-excellent" : (agsNum >= 10.0 ? "bg-good" : (agsNum < 7.5 ? "bg-bad" : "bg-average"));
+            let statusBadge = j.status === "titular" ? `<span class="badge-status status-titular">TITULAR</span>` : (j.status === "suplente" ? `<span class="badge-status status-suplente">SUPLENTE</span>` : `<span class="badge-status status-fora">FORA</span>`);
+            let rowClass = j.status === "suplente" ? "row-suplente" : "";
+
+            return `
+                <tr class="${rowClass}">
+                    <td>${statusBadge}</td>
+                    <td>
+                        <select onchange="atualizar(${i}, 'pos', this.value)">
+                            <option value="GR" ${j.pos==='GR'?'selected':''}>GR</option>
+                            <option value="DD" ${j.pos==='DD'?'selected':''}>DD</option>
+                            <option value="DC" ${j.pos==='DC'?'selected':''}>DC</option>
+                            <option value="DE" ${j.pos==='DE'?'selected':''}>DE</option>
+                            <option value="MD" ${j.pos==='MD'?'selected':''}>MD</option>
+                            <option value="MC" ${j.pos==='MC'?'selected':''}>MC</option>
+                            <option value="ME" ${j.pos==='ME'?'selected':''}>ME</option>
+                            <option value="AD" ${j.pos==='AD'?'selected':''}>AD</option>
+                            <option value="AE" ${j.pos==='AE'?'selected':''}>AE</option>
+                        </select>
+                    </td>
+                    <td><input type="text" value="${j.nome}" onchange="atualizar(${i}, 'nome', this.value)"></td>
+                    <td><input type="number" value="${j.idade}" min="16" max="40" onchange="atualizar(${i}, 'idade', parseInt(this.value))"></td>
+                    <td><input type="number" value="${j.cf}" onchange="atualizar(${i}, 'cf', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.ft}" min="1" max="5" onchange="atualizar(${i}, 'ft', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.xp}" min="0" max="9" onchange="atualizar(${i}, 'xp', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.fel}" onchange="atualizar(${i}, 'fel', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.des}" onchange="atualizar(${i}, 'des', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.aer}" onchange="atualizar(${i}, 'aer', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.pas}" onchange="atualizar(${i}, 'pas', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.cul}" onchange="atualizar(${i}, 'cul', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.vel}" onchange="atualizar(${i}, 'vel', parseFloat(this.value))"></td>
+                    <td><input type="number" value="${j.for}" onchange="atualizar(${i}, 'for', parseFloat(this.value))"></td>
+                    <td style="font-weight:bold;">${gs}</td>
+                    <td><span class="badge-skill ${badgeClass}">${ags}</span></td>
+                    <td><button style="color:red; cursor:pointer; background:none; border:none; font-weight:bold;" onclick="removerJogador(${i})">✕</button></td>
+                </tr>`;
+        }).join('');
+    }
+
+    function desenharCampo() {
+        const container = document.getElementById('pitchLayout');
+        container.innerHTML = `<div class="pitch-line-mid"></div><div class="pitch-circle"></div>`;
+
+        let fRow = document.createElement('div'); fRow.className = "pitch-row";
+        for (let i = 0; i < disposicaoAtual.fwd; i++) fRow.innerHTML += `<div class="node-player node-fwd">AV<span>90%</span></div>`;
+        container.appendChild(fRow);
+
+        let mRow = document.createElement('div'); mRow.className = "pitch-row";
+        for (let i = 0; i < disposicaoAtual.mid; i++) mRow.innerHTML += `<div class="node-player node-mid">MC<span>88%</span></div>`;
+        container.appendChild(mRow);
+
+        let dRow = document.createElement('div'); dRow.className = "pitch-row";
+        for (let i = 0; i < disposicaoAtual.def; i++) dRow.innerHTML += `<div class="node-player node-def">DEF<span>91%</span></div>`;
+        container.appendChild(dRow);
+
+        let gRow = document.createElement('div'); gRow.className = "pitch-row";
+        gRow.innerHTML = `<div class="node-player node-gk">GR<span>94%</span></div>`;
+        container.appendChild(gRow);
+    }
+
+    function atualizarSelectJogadoresTreino() {
+        const sel = document.getElementById('selectAtletaProg');
+        const currVal = sel.value;
+        sel.innerHTML = jogadores.map(j => `<option value="${j.id}">${j.pos} - ${j.nome} (${j.idade}a)</option>`).join('');
+        if(currVal) sel.value = currVal;
+        selecionarAtletaParaTreino(false);
+    }
+
+    function selecionarAtletaParaTreino(atualizarInputs = true) {
+        const id = parseInt(document.getElementById('selectAtletaProg').value);
+        const j = jogadores.find(x => x.id === id);
+        if(!j) return;
+
+        document.getElementById('trIdadeAtleta').value = j.idade || 22;
+        document.getElementById('avatarIcon').innerText = j.pos === 'GR' ? '🧤' : (j.pos.includes('A') ? '⚽' : '🏃');
+
+        if(atualizarInputs) {
+            let baseVal = j.pos === 'GR' ? j.aer : (j.pos.includes('D') ? j.des : (j.pos.includes('M') ? j.pas : j.aer));
+            document.getElementById('trAtributoBase').value = baseVal || 12;
+        }
+        calcularTreinoPorIdade();
+    }
+
+    // CÁLCULO DE TREINO BASEADO EXATAMENTE NA IDADE DO JOGADOR
+    function calcularTreinoPorIdade() {
+        let idade = parseInt(document.getElementById('trIdadeAtleta').value) || 22;
+        let base = parseFloat(document.getElementById('trAtributoBase').value) || 12;
+        let tipoTreino = document.getElementById('trTipoTreino').value;
+
+        let escalaoStr = "";
+        let fatorEvolucao = 1.0;
+
+        if (idade <= 20) {
+            escalaoStr = "Jovem Promessa (Evolução Muito Rápida)";
+            fatorEvolucao = 1.40;
+        } else if (idade >= 21 && idade <= 25) {
+            escalaoStr = "Em Desenvolvimento (Evolução Alta)";
+            fatorEvolucao = 1.15;
+        } else if (idade >= 26 && idade <= 29) {
+            escalaoStr = "Plenitude / Auferimento (Evolução Estável)";
+            fatorEvolucao = 0.75;
+        } else if (idade >= 30 && idade <= 33) {
+            escalaoStr = "Experiente (Evolução Lenta / Manutenção)";
+            fatorEvolucao = 0.35;
+        } else {
+            escalaoStr = "Veterano (Em Declínio Natural de Atributos)";
+            fatorEvolucao = -0.25;
+        }
+
+        document.getElementById('lblEscalaoIdade').innerText = `Escalão: ${escalaoStr}`;
+
+        let multTreino = tipoTreino === "Intensivo" ? 1.25 : (tipoTreino === "Manutencao" ? 0.4 : 1.0);
+        let ganhoEstimado = (1.2 * fatorEvolucao * multTreino);
+        
+        if (base >= 18 && ganhoEstimado > 0) ganhoEstimado *= 0.3; // Lei de rendimentos decrescentes em atributos altos
+
+        let valorFinal = Math.min(20, Math.max(1, base + ganhoEstimado));
+
+        document.getElementById('resultadoTreinoIdade').innerHTML = `
+            <b>📊 Simulação de Progressão por Idade (${idade} anos):</b><br>
+            • Escalão Etário: <strong style="color:#2563eb;">${escalaoStr}</strong><br>
+            • Taxa de Evolução Prevista: <strong style="${ganhoEstimado >= 0 ? 'color:#16a34a;' : 'color:#dc2626;'}">${ganhoEstimado >= 0 ? '+' : ''}${ganhoEstimado.toFixed(2)} pts por época</strong><br>
+            • Atributo Projetado (Fim da Época): <strong style="color:#1e293b; font-size:13px;">${valorFinal.toFixed(2)} / 20</strong><br>
+            <small style="color:#475569;">Atletas jovens evoluem exponencialmente mais rápido. Atletas veteranos sofrem penalização natural por idade.</small>
+        `;
+    }
+
+    function atualizarTaticasJogo() {
+        let mentalidade = document.getElementById('tMentalidade').value;
+        let passe = document.getElementById('tPasse').value;
+        let pressao = document.getElementById('tPressao').value;
+        let linha = document.getElementById('tLinhaDef').value;
+        let contra = document.getElementById('tContrat').value;
+        let marcacao = document.getElementById('tMarcacao').value;
+
+        let onze = jogadores.filter(j => j.status === "titular");
+        if (onze.length === 0) onze = jogadores.slice(0, 11);
+        let mids = onze.filter(j => j.pos.includes("M"));
+        let defs = onze.filter(j => j.pos.includes("D") && j.pos !== "GR");
+        if(mids.length === 0) mids = onze;
+        if(defs.length === 0) defs = onze;
+
+        let avgVel = defs.reduce((a,b) => a + b.vel, 0) / defs.length;
+
+        let alertaPasse = (passe === "Curtos" && mids.length < 3) ? '<br><span style="color:red">⚠️ Aviso Tático: Estilo de passes curtos exige um meio-campo preenchido.</span>' : '';
+        let alertaLinha = (linha.includes("ADIANADA") && avgVel < 10) ? '<br><span style="color:red">⚠️ Aviso Tático: Linha defensiva adiantada com defesas de velocidade inferior a 10 aumenta drasticamente o risco de contra-ataque.</span>' : '';
+
+        document.getElementById('parecerTaticoJogo').innerHTML = `
+            <b>📋 Parecer Consolidado das Táticas Avançadas:</b><br>
+            • <b>Mentalidade:</b> ${mentalidade} | <b>Passes:</b> ${passe} ${alertaPasse}<br>
+            • <b>Pressão:</b> ${pressao} | <b>Linha Defensiva:</b> ${linha} (Velocidade Média Defesa: ${avgVel.toFixed(1)}) ${alertaLinha}<br>
+            • <b>Contra-Ataque:</b> ${contra} | <b>Marcação:</b> ${marcacao}
+        `;
+    }
+
+    function atualizar(i, campo, val) { jogadores[i][campo] = val; renderTabela(); atualizarTaticasJogo(); atualizarSelectJogadoresTreino(); }
+    function removerJogador(i) { jogadores.splice(i, 1); otimizarEFormarEquipa(); }
+    function abrirModalImportar() { document.getElementById('modalImport').style.display = 'flex'; }
+    function fecharModalImportar() { document.getElementById('modalImport').style.display = 'none'; }
+
+    // LEITURA OCR DE IMAGEM CARREGADA
+    document.getElementById('fileImageInput').addEventListener('change', function(e) {
+        let file = e.target.files[0];
+        if(!file) return;
+        document.getElementById('statusOCR').innerText = "A analisar a imagem do plantel (OCR em curso)...";
+        
+        Tesseract.recognize(
+            file,
+            'por',
+            { logger: m => { if(m.status === 'recognizing text') document.getElementById('statusOCR').innerText = `A processar imagem: ${(m.progress * 100).toFixed(0)}%`; } }
+        ).then(({ data: { text } }) => {
+            document.getElementById('statusOCR').innerText = "Leitura concluída com sucesso!";
+            document.getElementById('txtImport').value = text;
+        }).catch(err => {
+            document.getElementById('statusOCR').innerText = "Erro ao ler a imagem. Insira os dados no campo abaixo.";
+        });
+    });
+
+    function processarTextoImportadoManual() {
+        const raw = document.getElementById('txtImport').value.trim();
+        if(!raw) return;
+        let linhas = raw.split('\n');
+        let novo = [];
+        linhas.forEach((l, idx) => {
+            let p = l.trim().split(/\s+/);
+            if(p.length >= 7) {
+                let nums = p.filter(x => !isNaN(parseFloat(x))).map(Number);
+                novo.push({
+                    id: Date.now()+idx, 
+                    pos: p[0].toUpperCase(), 
+                    nome: p[1]+" "+(p[2]&&isNaN(p[2])?p[2]:""),
+                    idade: nums[0] || 22,
+                    cf: nums[1]||85, ft: nums[2]||4, xp: nums[3]||5, fel: nums[4]||85,
+                    des: nums[5]||12, aer: nums[6]||12, pas: nums[7]||12, cul: nums[8]||12, vel: nums[9]||12, for: nums[10]||12, 
+                    status: "suplente"
+                });
+            }
+        });
+        if(novo.length > 0) { 
+            jogadores = novo; 
+            otimizarEFormarEquipa(); 
+            fecharModalImportar(); 
+            alert("Plantel importado com sucesso!");
+        } else { 
+            alert("Não foram detetados dados válidos. Verifique se o formato inclui a idade."); 
+        }
+    }
+
+    otimizarEFormarEquipa();
+</script>
+</body>
+</html>
